@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/geoffreycuffchartrand/hash-service/issues"
   },
-  "homepage": "https://github.com/geoffreycuffchartrand/hash-service#readme"
+  "homepage": "https://github.com/geoffreycuffchartrand/hash-service#readme",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
