@@ -25,14 +25,18 @@ function jsonParserGetName(stringValue) {
     return objectValue.menu.name;
 }
 
+
+
 async function bucketer() {
     try {
         await client.connect();
         var bucket = "";
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = coll.find({});
-        await cursor.stream().on("data", doc => bucket = bucket + doc.hash);
+        const cursor = coll.find({}, { hash: 1, _id: 0 });
+        for await (const doc of cursor) {
+            bucket = bucket + doc.hash + ", "
+          }
         return bucket;
     }
     finally {
@@ -45,7 +49,6 @@ async function run(name_data, hash_data) {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-        // Send a ping to confirm a successful connection
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
         const docs = {name: name_data, hash: hash_data}; 
