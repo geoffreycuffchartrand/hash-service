@@ -33,13 +33,6 @@ const {
 } = require('node:crypto');
 
 
-function jsonParserGetData(stringValue) {
-
-    var string = JSON.stringify(stringValue);
-    var objectValue = JSON.parse(string);
-    return [objectValue.name, objectValue.issuer.id, objectValue.issuanceDate];
-}
-
 async function signer(hashlist) {
     const credential = JSON.stringify(verifiableCredential.VC(hashlist));
     const response = await fetch('http://localhost:4006/instance/testing/credentials/sign', {
@@ -59,7 +52,7 @@ async function search(searchedName) {
         var bucket = "";
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = await coll.find({ name: searchedName }, { name: 1, _id: 0 });
+        const cursor = await coll.find({ 'vc.credentialSubject.name': searchedName}, { vc: 1, _id: 0 });
         for await (const doc of cursor) {
             bucket = bucket + doc.hash + ", "
         }
@@ -72,7 +65,7 @@ async function search(searchedName) {
     }
 }
 
-async function bucketer() {
+async function bucketer(bucketID) {
     try {
         await client.connect();
         var bucket = "";
@@ -97,7 +90,7 @@ async function run(hash_data, hash) {
         await client.connect();
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const docs = { name: hash_data[0], issuerID: hash_data[1], issuanceDate: hash_data[2], hash: hash };
+        const docs = { vc: hash_data, hash: hash };
         const result = await coll.insertOne(docs);
     } finally {
         // Ensures that the client will close when you finish/error
@@ -109,7 +102,7 @@ app.post('/', (req, res) => {
     const hash = createHash('sha256');
     hash.update(JSON.stringify(req.body));
     const hashedCred = hash.copy().digest('hex');
-    const hash_data = jsonParserGetData(req.body);
+    const hash_data = JSON.stringify(req.body);
     console.log(hashedCred);
     run(hash_data, hashedCred);
     res.end(hashedCred);
@@ -123,18 +116,11 @@ server.on('upgrade', (request, socket, head) => {
     });
 });
 
-app.get('/', async (req, res) => {
-    const hashList = await bucketer();
-    const name = req.query.name;
-    console.log(name);
-    if (typeof name == 'undefined') {
-        const result = await signer(hashList);
-        res.end(JSON.stringify(result));
-    }
-    else {
-        const result = await search(name);
-        res.end(JSON.stringify(result));
-    }
+app.get('/bucket/{bucketId}', async (req, res) => {
+    const bucketId = req.pa;
+    const hashList = await bucketer(bucketId);
+    const result = await signer(hashList);
+    res.json(result);
 });
 
 app.get('/search', async (req, res) => {
