@@ -3,34 +3,35 @@ const app = express();
 app.use(express.json());
 const fetch = require("node-fetch");
 const ws = require('ws');
+const verifiableCredential = require('./verifiableCredential.js');
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://geoffreycuffchartrand:XwazPm2lDw50MFeD@cluster0.6oaecgd.mongodb.net/?appName=Cluster0";
 
 const wsServer = new ws.Server({ noServer: true });
 wsServer.on('connection', socket => {
-  socket.on('message', function message(data) {
-    if (data == "bucketsPls") {
-        wsServer.send(bucketer);
-    }
-    else {
-        console.log(data);
-    }
-  });
+    socket.on('message', function message(data) {
+        if (data == "bucketsPls") {
+            wsServer.send(bucketer);
+        }
+        else {
+            console.log(data);
+        }
+    });
 });
 
 const client = new MongoClient(uri, {
     serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
     }
-  });
+});
 
 const {
     createHash,
-  } = require('node:crypto');
-const verifiableCredential = require('./verifiableCredential.js');
+} = require('node:crypto');
+
 
 function jsonParserGetData(stringValue) {
 
@@ -40,12 +41,11 @@ function jsonParserGetData(stringValue) {
 }
 
 async function signer(hashlist) {
-    const credential = {"credential": verifiableCredential.VC(hashlist), 
-    "options": {"verificationMethod":"did:web:digitalcredentials.github.io#z6MkrXSQTybtqyMasfSxeRBJxDvDUGqb7mt9fFVXkVn6xTG7"}};
+    const credential = JSON.stringify(verifiableCredential.VC(hashlist));
     const response = await fetch('http://localhost:4006/instance/testing/credentials/sign', {
-	    method: 'post',
-	    body: credential,
-	    headers: {'Content-Type': 'application/json'}
+        method: 'post',
+        body: credential,
+        headers: { 'Content-Type': 'application/json' }
     });
     const signedCred = await response.json();
     console.log("this is the signedCred:")
@@ -53,17 +53,17 @@ async function signer(hashlist) {
     return signedCred;
 }
 
-async function search (searchedName) {
+async function search(searchedName) {
     try {
         await client.connect();
         var bucket = "";
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = await coll.find({name: searchedName}, { name: 1, _id: 0 });
+        const cursor = await coll.find({ name: searchedName }, { name: 1, _id: 0 });
         for await (const doc of cursor) {
             bucket = bucket + doc.hash + ", "
         }
-        bucket = bucket.slice(0, -2); 
+        bucket = bucket.slice(0, -2);
         return bucket;
     }
     finally {
@@ -82,7 +82,7 @@ async function bucketer() {
         for await (const doc of cursor) {
             bucket = bucket + doc.hash + ", "
         }
-        bucket = bucket.slice(0, -2); 
+        bucket = bucket.slice(0, -2);
         return bucket;
     }
     finally {
@@ -97,7 +97,7 @@ async function run(hash_data, hash) {
         await client.connect();
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const docs = {name: hash_data[0], issuerID: hash_data[1], issuanceDate: hash_data[2], hash: hash}; 
+        const docs = { name: hash_data[0], issuerID: hash_data[1], issuanceDate: hash_data[2], hash: hash };
         const result = await coll.insertOne(docs);
     } finally {
         // Ensures that the client will close when you finish/error
@@ -119,12 +119,12 @@ const server = app.listen(3000);
 
 server.on('upgrade', (request, socket, head) => {
     wsServer.handleUpgrade(request, socket, head, socket => {
-      wsServer.emit('connection', socket, request);
+        wsServer.emit('connection', socket, request);
     });
-  });
+});
 
 app.get('/', async (req, res) => {
-	const hashList = await bucketer();
+    const hashList = await bucketer();
     const name = req.query.name;
     console.log(name);
     if (typeof name == 'undefined') {
@@ -137,4 +137,11 @@ app.get('/', async (req, res) => {
     }
 });
 
+app.get('/search', async (req, res) => {
 
+    const name = req.query.name;
+    console.log(name);
+    const result = await search(name);
+    res.end(JSON.stringify(result));
+
+});

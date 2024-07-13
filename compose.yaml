@@ -1,0 +1,8 @@
+version: '3.5'
+services:
+  hash-service:
+    build: .
+    ports:
+      - "3000:3000"
+  signer:
+    image: digitalcredentials/signing-service:0.3.0
