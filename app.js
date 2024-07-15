@@ -52,9 +52,9 @@ async function search(searchedName) {
         var bucket = "";
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = await coll.find({ 'vc.credentialSubject.name': searchedName}, { vc: 1, _id: 0 });
+        const cursor = await coll.find({ "vc.id" : searchedName}, { vc: 1, _id: 0 });
         for await (const doc of cursor) {
-            bucket = bucket + doc.hash + ", "
+            bucket = bucket + JSON.stringify(doc.vc) + ", "
         }
         bucket = bucket.slice(0, -2);
         return bucket;
@@ -90,7 +90,7 @@ async function run(hash_data, hash) {
         await client.connect();
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const docs = { vc: hash_data, hash: hash };
+        const docs = {vc:hash_data, hash:hash};
         const result = await coll.insertOne(docs);
     } finally {
         // Ensures that the client will close when you finish/error
@@ -102,7 +102,7 @@ app.post('/', (req, res) => {
     const hash = createHash('sha256');
     hash.update(JSON.stringify(req.body));
     const hashedCred = hash.copy().digest('hex');
-    const hash_data = JSON.stringify(req.body);
+    const hash_data = req.body;
     console.log(hashedCred);
     run(hash_data, hashedCred);
     res.end(hashedCred);
