@@ -32,7 +32,6 @@ const {
     createHash,
 } = require('node:crypto');
 
-
 async function signer(hashlist) {
     const credential = JSON.stringify(verifiableCredential.VC(hashlist));
     const response = await fetch('http://localhost:4006/instance/testing/credentials/sign', {
