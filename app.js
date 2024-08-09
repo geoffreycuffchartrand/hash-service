@@ -6,7 +6,9 @@ const ws = require('ws');
 const verifiableCredential = require('./verifiableCredential.js');
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://geoffreycuffchartrand:XwazPm2lDw50MFeD@cluster0.6oaecgd.mongodb.net/?appName=Cluster0";
+const uri = "mongodb+srv://gregorycuff:J5SyknlDUSMmh3oo@cluster0.sn5zs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+// const uri = "mongodb+srv://geoffreycuffchartrand:XwazPm2lDw50MFeD@cluster0.6oaecgd.mongodb.net/?appName=Cluster0";
+// format: monogdb+srv://<username>:<password>@<cluster>.<projectId>.mongodb.net/...
 
 const wsServer = new ws.Server({ noServer: true });
 wsServer.on('connection', socket => {
@@ -83,7 +85,7 @@ async function bucketer(bucketID) {
     }
 }
 
-async function run(hash_data, hash) {
+async function run(hash_data, hash) { // add hash_data and hash to the Mongo database
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
@@ -97,14 +99,14 @@ async function run(hash_data, hash) {
     }
 }
 
-app.post('/', (req, res) => {
+app.post('/', (req, res) => { // upon recieving credential from front end, send credential and a hashed copy to Mongo using run() above
     const hash = createHash('sha256');
     hash.update(JSON.stringify(req.body));
     const hashedCred = hash.copy().digest('hex');
     const hash_data = req.body;
     console.log(hashedCred);
     run(hash_data, hashedCred);
-    res.end(hashedCred);
+    res.end(hashedCred); // ends request and sends the hashed credential back to front end
 });
 
 const server = app.listen(3000);
