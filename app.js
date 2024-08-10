@@ -4,21 +4,25 @@ app.use(express.json());
 const fetch = require("node-fetch");
 const ws = require('ws');
 const verifiableCredential = require('./verifiableCredential.js');
+var cors = require('cors');
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://geoffreycuffchartrand:XwazPm2lDw50MFeD@cluster0.6oaecgd.mongodb.net/?appName=Cluster0";
 
+/*
 const wsServer = new ws.Server({ noServer: true });
 wsServer.on('connection', socket => {
     socket.on('message', function message(data) {
-        if (data == "bucketsPls") {
-            wsServer.send(bucketer);
+        if (data + "" == "bucketsPls") {
+            const buckets = await bucketer("a")
+            socket.send(buckets);
         }
         else {
-            console.log(data);
+            console.log(data + "");
         }
     });
 });
+*/
 
 const client = new MongoClient(uri, {
     serverApi: {
@@ -98,7 +102,10 @@ async function run(hash_data, hash) {
     }
 }
 
+app.use(cors());
+
 app.post('/', (req, res) => {
+    
     const hash = createHash('sha256');
     hash.update(JSON.stringify(req.body));
     const hashedCred = hash.copy().digest('hex');
@@ -108,7 +115,7 @@ app.post('/', (req, res) => {
     res.end(hashedCred);
 });
 
-const server = app.listen(3000);
+const server = app.listen(3001);
 
 server.on('upgrade', (request, socket, head) => {
     wsServer.handleUpgrade(request, socket, head, socket => {
@@ -117,14 +124,16 @@ server.on('upgrade', (request, socket, head) => {
 });
 
 app.get('/bucket/{bucketId}', async (req, res) => {
+    res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
     const bucketId = req.pa;
     const hashList = await bucketer(bucketId);
     const result = await signer(hashList);
     res.json(result);
+    
 });
 
 app.get('/search', async (req, res) => {
-
+    res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
     const name = req.query.name;
     console.log(name);
     const result = await search(name);
