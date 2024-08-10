@@ -4,6 +4,9 @@ app.use(express.json());
 const fetch = require("node-fetch");
 const ws = require('ws');
 const verifiableCredential = require('./verifiableCredential.js');
+const cors = require('cors')
+
+app.use(cors())
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://gregorycuff:J5SyknlDUSMmh3oo@cluster0.sn5zs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -109,7 +112,7 @@ app.post('/', (req, res) => { // upon recieving credential from front end, send 
     res.end(hashedCred); // ends request and sends the hashed credential back to front end
 });
 
-const server = app.listen(3000);
+const server = app.listen(3001);
 
 server.on('upgrade', (request, socket, head) => {
     wsServer.handleUpgrade(request, socket, head, socket => {
