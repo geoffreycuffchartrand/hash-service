@@ -5,7 +5,6 @@ const fetch = require("node-fetch");
 const ws = require('ws');
 const verifiableCredential = require('./verifiableCredential.js');
 const cors = require('cors')
-
 app.use(cors())
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
@@ -56,11 +55,12 @@ async function search(searchedName) {
         var bucket = "";
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = await coll.find({ "vc.id" : searchedName}, { vc: 1, _id: 0 });
+        const cursor = await coll.find({ "vc" : searchedName}, { vc: 1, _id: 0, hash: 0 });
         for await (const doc of cursor) {
             bucket = bucket + JSON.stringify(doc.vc) + ", "
         }
         bucket = bucket.slice(0, -2);
+        console.log(bucket)
         return bucket;
     }
     finally {
@@ -95,18 +95,19 @@ async function run(hash_data, hash) { // add hash_data and hash to the Mongo dat
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
         const docs = {vc:hash_data, hash:hash};
-        const result = await coll.insertOne(docs);
+        const result = await coll.insertOne(docs); 
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
     }
+    console.log('Mongo success!')
 }
 
 app.post('/', (req, res) => { // upon recieving credential from front end, send credential and a hashed copy to Mongo using run() above
-    const hash = createHash('sha256');
-    hash.update(JSON.stringify(req.body));
+    const hash = createHash('sha256')
+    hash.update(req.body.cred);
     const hashedCred = hash.copy().digest('hex');
-    const hash_data = req.body;
+    const hash_data = req.body.cred;
     console.log(hashedCred);
     run(hash_data, hashedCred);
     res.end(hashedCred); // ends request and sends the hashed credential back to front end
