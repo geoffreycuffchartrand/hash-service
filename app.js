@@ -49,24 +49,26 @@ async function signer(hashlist) {
     return signedCred;
 }
 
-async function search(searchedName) {
+async function search(name) {
+    const query = { vc: name }; // define what we're searching for
+    const fields = { projection: { _id: 1, vc: 1, hash: 1}} // define the fields we want returned (all of it for now)
     try {
         await client.connect();
-        var bucket = "";
+        var bucket = [];
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
-        const cursor = await coll.find({ "vc" : searchedName}, { vc: 1, _id: 0, hash: 0 });
+        const cursor = coll.find(query, fields);
         for await (const doc of cursor) {
-            bucket = bucket + JSON.stringify(doc.vc) + ", "
+            bucket.push(doc);
         }
-        bucket = bucket.slice(0, -2);
-        console.log(bucket)
-        return bucket;
+    }
+    catch (e) {
+        console.log(e)
     }
     finally {
-        //Ensures that the client will close when you finish/error
         await client.close();
     }
+    return bucket;
 }
 
 async function bucketer(bucketID) {
@@ -129,10 +131,9 @@ app.get('/bucket/{bucketId}', async (req, res) => {
 });
 
 app.get('/search', async (req, res) => {
-
     const name = req.query.name;
     console.log(name);
     const result = await search(name);
-    res.end(JSON.stringify(result));
-
+    console.log(result);
+    res.send(result);
 });
