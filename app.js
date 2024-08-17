@@ -97,7 +97,7 @@ async function run(hash_data, hash) { // add hash_data and hash to the Mongo dat
         const db = client.db("hash_database");
         const coll = db.collection("hashes");
         const docs = {vc:hash_data, hash:hash};
-        const result = await coll.insertOne(docs); 
+        await coll.insertOne(docs); 
     } finally {
         // Ensures that the client will close when you finish/error
         await client.close();
@@ -110,7 +110,6 @@ app.post('/', (req, res) => { // upon recieving credential from front end, send 
     hash.update(req.body.cred);
     const hashedCred = hash.copy().digest('hex');
     const hash_data = req.body.cred;
-    console.log(hashedCred);
     run(hash_data, hashedCred);
     res.end(hashedCred); // ends request and sends the hashed credential back to front end
 });
@@ -132,8 +131,6 @@ app.get('/bucket/{bucketId}', async (req, res) => {
 
 app.get('/search', async (req, res) => {
     const name = req.query.name;
-    console.log(name);
     const result = await search(name);
-    console.log(result);
     res.send(result);
 });
